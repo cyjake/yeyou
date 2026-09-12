@@ -36,7 +36,6 @@ export function App() {
   const canRedo = useProjectStore(state => state.future.length > 0);
   const undo = useProjectStore(state => state.undo);
   const redo = useProjectStore(state => state.redo);
-  const [previewMode, setPreviewMode] = useState(false);
   const [exportWarnings, setExportWarnings] = useState<string[] | null>(null);
   const [exportStatus, setExportStatus] = useState<'idle' | 'exporting' | 'done' | 'error'>('idle');
   const [exportError, setExportError] = useState<string>();
@@ -48,7 +47,7 @@ export function App() {
   const [personalPassages, setPersonalPassages] = useState<CuratedPassage[]>(loadPersonalPassages);
   const [pwaStatus, setPwaStatus] = useState<PwaStatus>('ready');
   const [pwaRegistration, setPwaRegistration] = useState<ServiceWorkerRegistration>();
-  const [mobilePanel, setMobilePanel] = useState<'content' | 'preview' | 'style'>('preview');
+  const [mobilePanel, setMobilePanel] = useState<'content' | 'style' | null>(null);
   const [readingPopover, setReadingPopover] = useState<{ tokenId: string; left: number; top: number; placement: 'above' | 'below' }>();
   const [preparedPng, setPreparedPng] = useState<ProjectPng>();
   const [shareNotice, setShareNotice] = useState<{ kind: 'success' | 'error'; message: string }>();
@@ -209,9 +208,9 @@ export function App() {
   };
 
   const dismissMobilePanel = (event: ReactMouseEvent<HTMLElement>) => {
-    if (mobilePanel === 'preview' || !window.matchMedia('(max-width: 860px)').matches) return;
+    if (!mobilePanel || !window.matchMedia('(max-width: 860px)').matches) return;
     event.stopPropagation();
-    setMobilePanel('preview');
+    setMobilePanel(null);
   };
 
   const requestExport = (format: 'png' | 'pdf') => {
@@ -352,8 +351,8 @@ export function App() {
   };
 
   return (
-    <main className={`studio-shell ${previewMode ? 'preview-mode' : ''}`}>
-      <section className="studio-workspace" aria-label="文字卡片编辑器" data-mobile-panel={mobilePanel}>
+    <main className="studio-shell">
+      <section className="studio-workspace" aria-label="文字卡片编辑器" data-mobile-panel={mobilePanel ?? 'closed'}>
         <aside className="inspector inspector-content">
           <div className="panel-masthead">
             <a className="brand" href={import.meta.env.BASE_URL} aria-label="葉遊首页">
@@ -412,16 +411,6 @@ export function App() {
         </aside>
 
         <section className="canvas-stage" aria-label="卡片预览" onClickCapture={dismissMobilePanel}>
-          <div className="canvas-toolbar" aria-label="画布操作">
-            <div className="canvas-history">
-              <button className="history-button icon-only" type="button" onClick={undo} disabled={!canUndo} title="撤销（⌘Z）" aria-label="撤销">↶</button>
-              <button className="history-button icon-only" type="button" onClick={redo} disabled={!canRedo} title="重做（⇧⌘Z）" aria-label="重做">↷</button>
-              <span>已自动保存</span>
-            </div>
-            <button className="quiet-button" type="button" onClick={() => setPreviewMode(value => !value)}>
-              {previewMode ? '返回编辑' : '专注预览'}
-            </button>
-          </div>
           <div className="stage-label">
             <span>{templateName(layout.template)}</span>
             <span>{layout.ratio.replace(':', ' : ')}</span>
@@ -476,25 +465,12 @@ export function App() {
           <p className="stage-note">
             {analysisStatus === 'loading' ? '正在核对读音…' : '文字、读音与出处现在来自同一份结构化文档。'}
           </p>
-        </section>
-
-        <aside className="inspector inspector-style">
-          <div className="inspector-heading compact">
-            <span className="step">02</span>
-            <div><h2>样式</h2><p>以选择代替繁琐调参</p></div>
-          </div>
-
-          <StyleControls
-            template={layout.template}
-            direction={layout.direction}
-            ratio={layout.ratio}
-            setTemplate={setTemplate}
-            setDirection={setDirection}
-            setRatio={setRatio}
-            locale={project.locale}
-          />
 
           <div className="export-dock">
+            <div className="canvas-toolbar" aria-label="画布操作">
+              <button className="history-button icon-only" type="button" onClick={undo} disabled={!canUndo} title="撤销（⌘Z）" aria-label="撤销">↶</button>
+              <button className="history-button icon-only" type="button" onClick={redo} disabled={!canRedo} title="重做（⇧⌘Z）" aria-label="重做">↷</button>
+            </div>
             <div className="export-action">
               <div className="export-split">
                 <button
@@ -535,16 +511,41 @@ export function App() {
               )}
             </div>
           </div>
+        </section>
+
+        <aside className="inspector inspector-style">
+          <div className="inspector-heading compact">
+            <span className="step">02</span>
+            <div><h2>样式</h2><p>以选择代替繁琐调参</p></div>
+          </div>
+
+          <StyleControls
+            template={layout.template}
+            direction={layout.direction}
+            ratio={layout.ratio}
+            setTemplate={setTemplate}
+            setDirection={setDirection}
+            setRatio={setRatio}
+            locale={project.locale}
+          />
+
         </aside>
       </section>
 
-      {!previewMode && (
-        <nav className="mobile-panel-nav" aria-label="工作区">
-          <button type="button" className={mobilePanel === 'content' ? 'active' : ''} onClick={() => setMobilePanel('content')}><span>01</span>文字</button>
-          <button type="button" className={mobilePanel === 'preview' ? 'active' : ''} onClick={() => setMobilePanel('preview')}><span>02</span>预览</button>
-          <button type="button" className={mobilePanel === 'style' ? 'active' : ''} onClick={() => setMobilePanel('style')}><span>03</span>样式</button>
-        </nav>
-      )}
+      <nav className="mobile-panel-nav" aria-label="工作区">
+          <button
+            type="button"
+            className={mobilePanel === 'content' ? 'active' : ''}
+            aria-expanded={mobilePanel === 'content'}
+            onClick={() => setMobilePanel(value => value === 'content' ? null : 'content')}
+          ><span>01</span>文字</button>
+          <button
+            type="button"
+            className={mobilePanel === 'style' ? 'active' : ''}
+            aria-expanded={mobilePanel === 'style'}
+            onClick={() => setMobilePanel(value => value === 'style' ? null : 'style')}
+          ><span>02</span>样式</button>
+      </nav>
 
       {readingPopover && activeReadingToken && (
         <ReadingPopover
