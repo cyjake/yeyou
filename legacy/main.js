@@ -14,8 +14,8 @@ rtFontSizeInput.addEventListener('input', function() {
 });
 document.getElementById('content-ratio').addEventListener('change', updateAllAndSync);
 document.getElementById('content-font-family').addEventListener('change', updateAllAndSync);
-// Extracted from index.html
-// All main logic for furigana-maker
+// Extracted from the original legacy page.
+// All main logic for the first YEYOU prototype.
 
 // --- Content reference declarations ---
 const contentDiv = document.getElementById('content');
@@ -31,13 +31,7 @@ async function loadKanjiDict() {
         kanjiDict = data;
         // Build fullWordMap and okuriganaKanjiSet
         fullWordMap = kanjiDict;
-        for (const word of Object.keys(kanjiDict)) {
-            if (/^[\u4E00-\u9FFF]+$/.test(word)) continue; // pure kanji only
-            // Okurigana: starts with kanji, ends with kana
-            if (/^[\u4E00-\u9FFF]+[\u3040-\u309F]+$/.test(word)) {
-                okuriganaKanjiSet.add(word[0]);
-            }
-        }
+        okuriganaKanjiSet = FuriganaEngine.buildOkuriganaKanjiSet(kanjiDict);
     }
 }
 
@@ -118,13 +112,13 @@ document.getElementById('edit-content-btn').addEventListener('click', function(e
     if (overlayTextarea) {
         // Submit change and exit edit mode
         finishEdit();
-        e.target.innerHTML = EDIT_ICON_SVG;
+        e.currentTarget.innerHTML = EDIT_ICON_SVG;
         return;
     }
     // Enter edit mode (simulate double-click logic)
     const dblClickEvent = new Event('dblclick');
     contentDiv.dispatchEvent(dblClickEvent);
-    e.target.innerHTML = OK_ICON_SVG;
+    e.currentTarget.innerHTML = OK_ICON_SVG;
 });
 
 contentDiv.addEventListener('dblclick', function(e) {
@@ -226,52 +220,9 @@ function syncSettingsToUrl() {
     params.set('rtFontSize', document.getElementById('rt-font-size').value);
     history.replaceState(null, '', '?' + params.toString());
 }
-function splitByScript(text) {
-    return text.match(/([\u4E00-\u9FFF]+|[\u3040-\u309F]+|[\u30A0-\u30FF]+|[^\u4E00-\u9FFF\u3040-\u309F\u30A0-\u30FF]+)/g);
-}
-
 async function generateRubyHtmlFromJapanese(text) {
     await loadKanjiDict();
-    const segments = splitByScript(text);
-    let html = '';
-    for (let i = 0; i < segments.length; i++) {
-        const segment = segments[i];
-        // Try full word match first
-        if (fullWordMap[segment] && segment.length > 1) {
-            html += `<ruby>${segment}<rt>${fullWordMap[segment][0]}</rt></ruby>`;
-            continue;
-        }
-        // If segment starts with okurigana kanji, try to combine with following kana
-        if (okuriganaKanjiSet.has(segment[0]) && /[\u4E00-\u9FFF]/.test(segment[0])) {
-            let nextSegment = segments[i + 1];
-            if (nextSegment && /[\u3040-\u309F]+/.test(nextSegment)) {
-                let found = false;
-                for (let k = 1; k <= nextSegment.length; k++) {
-                    let combined = segment + nextSegment.slice(0, k);
-                    if (fullWordMap[combined]) {
-                        const reading = fullWordMap[combined][0].slice(0, -k);
-                        html += `<span class="okurigana-group" data-okurigana="${combined}" data-reading="${reading}"><ruby>${segment}<rt>${reading}</rt></ruby><span class="okurigana">${nextSegment.slice(0, k)}</span></span>`;
-                        if (k < nextSegment.length) {
-                            html += nextSegment.slice(k);
-                        }
-                        i++; // advance index to skip the kana segment
-                        found = true;
-                        break;
-                    }
-                }
-                if (found) continue;
-            }
-        }
-        // Fallback: single kanji
-        for (const chr of segment) {
-            if (fullWordMap[chr]) {
-                html += `<ruby>${chr}<rt>${fullWordMap[chr][0]}</rt></ruby>`;
-            } else {
-                html += chr;
-            }
-        }
-    }
-    return html;
+    return FuriganaEngine.generateRubyHtml(text, fullWordMap, okuriganaKanjiSet);
 }
 async function restoreSettingsFromUrl() {
     const params = new URLSearchParams(window.location.search);

@@ -1,2 +1,6 @@
+node_modules/
+dist/
+.DS_Store
+coverage/
 kanjidic2-*
 jmdict-*

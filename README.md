@@ -1,7 +1,7 @@
-# Furigana Maker
+# 葉遊 / YEYOU
 
 
-A web tool for rendering Japanese text with accurate furigana (ruby) annotations, supporting both pure kanji and okurigana words.
+A local-first literary card studio for Japanese text with correctable furigana, plus an early Chinese typography prototype. It is designed for attractive, shareable reading cards without requiring an account.
 
 ## Features
 
@@ -12,6 +12,12 @@ A web tool for rendering Japanese text with accurate furigana (ruby) annotations
 - **Customizable Appearance**: Change font, colors, line height, ruby opacity, and more with palette and style controls.
 - **Responsive UI**: Modern, mobile-friendly design with palette presets and live preview.
 - **Hover Highlighting**: Highlights kanji, ruby, and okurigana units on hover for easy reading.
+- **Curated Starter Gallery**: 25 Japanese and 20 Chinese passages, organized by mood, provenance and rights status, plus a private local collection with JSON backup.
+- **Five Visual Templates**: Bunko, Cinema, Notebook, Modern Chinese and Calligraphy.
+- **Reliable Export**: Deterministic SVG rendering to high-resolution PNG or print-friendly PDF, with reading, attribution, script and overflow review.
+- **Chinese Prototype**: A simple Japanese/Chinese mode, Traditional-first literary examples, exact source preservation and no silent script conversion.
+- **Local-first PWA**: Installable application shell, offline reuse after assets have been cached, autosaved drafts and explicit update recovery.
+- **Private Creative Assistant**: Deterministic on-device recipe suggestions. Optional cloud suggestions require a separately configured same-origin server endpoint; no API key is shipped to the browser.
 
 ## How It Works
 
@@ -23,9 +29,35 @@ A web tool for rendering Japanese text with accurate furigana (ruby) annotations
 ## Getting Started
 
 1. Clone the repository.
-2. Open `index.html` in your browser.
-3. Paste or type Japanese text into the input area.
-4. Adjust appearance and palette as desired.
+2. Install dependencies with `npm install`.
+3. Start the app with `npm run dev`.
+4. Open `/` in your browser.
+5. Paste or type Japanese or Chinese text into the input area.
+6. Adjust the visual style and export when ready.
+
+The React/TypeScript Studio is the default application:
+
+```sh
+npm install
+npm run dev
+```
+
+Open `/` for Studio. The original vanilla prototype and its archived assets remain available at `/legacy.html` and `/legacy/`.
+
+The upgrade implementation is complete through the private-beta readiness gate. See [the beta test kit](docs/beta-test-kit.md), [content policy](docs/content-sources.md), [AI boundary](docs/ai-assistance-contract.md), and [full upgrade plan](docs/upgrade-plan.md).
+
+## Quality Checks
+
+The current renderer has a dependency-free Node test suite and a permanent Japanese reading benchmark:
+
+```sh
+npm test
+npm run benchmark
+npm run benchmark:kuromoji
+npm run check
+```
+
+The benchmark separates supported baseline readings from deliberately difficult contextual readings. The latter document the cases that the planned morphological analyzer must improve rather than hiding them behind hand-picked examples.
 
 ## Dictionary Generation
 

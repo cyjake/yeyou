@@ -1,0 +1,29 @@
+{
+  "name": "yeyou",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "node --test tests/ruby-engine.test.js",
+    "test:studio": "vitest run",
+    "benchmark": "node scripts/run-japanese-benchmark.js",
+    "benchmark:kuromoji": "node scripts/benchmark-kuromoji.js",
+    "check": "npm test && npm run test:studio && npm run benchmark && npm run build"
+  },
+  "dependencies": {
+    "@faanau/kuromoji": "^0.2.1",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "zod": "^4.6.2",
+    "zustand": "^5.0.15"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.0",
+    "vitest": "^5.0.0"
+  }
+}
