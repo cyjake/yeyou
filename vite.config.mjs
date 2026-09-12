@@ -4,6 +4,8 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 const kuromojiDictionary = resolve(import.meta.dirname, 'node_modules/@faanau/kuromoji/dict');
+const pagesBasePath = process.env.PAGES_BASE_PATH?.replace(/\/$/, '');
+const base = pagesBasePath ? `${pagesBasePath}/` : '/';
 const dictionaryFiles = new Set([
   'base.dat.gz', 'cc.dat.gz', 'check.dat.gz', 'tid.dat.gz', 'tid_map.dat.gz', 'tid_pos.dat.gz',
   'unk.dat.gz', 'unk_char.dat.gz', 'unk_compat.dat.gz', 'unk_invoke.dat.gz', 'unk_map.dat.gz', 'unk_pos.dat.gz'
@@ -33,6 +35,7 @@ const serveAndCopyDictionaries = {
 };
 
 export default defineConfig({
+  base,
   plugins: [react(), serveAndCopyDictionaries],
   resolve: {
     // The package's ESM wrapper uses node:createRequire; its CommonJS entry is

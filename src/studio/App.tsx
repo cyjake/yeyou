@@ -356,7 +356,7 @@ export function App() {
       <section className="studio-workspace" aria-label="文字卡片编辑器" data-mobile-panel={mobilePanel}>
         <aside className="inspector inspector-content">
           <div className="panel-masthead">
-            <a className="brand" href="/" aria-label="葉遊首页">
+            <a className="brand" href={import.meta.env.BASE_URL} aria-label="葉遊首页">
               <span className="brand-mark">葉</span>
               <span><strong>葉遊</strong><small>YEYOU</small></span>
             </a>
@@ -436,21 +436,26 @@ export function App() {
                     {line}
                     {index < classicalVerseLines.length - 1 && <br />}
                   </Fragment>
-                )) : verticalCopyPlan ? verticalCopyPlan.columns.map((column, columnIndex) => (
-                  <span className="copy-column" key={`column-${columnIndex}`}>
-                    {column.map((item, itemIndex) => {
-                      const token = content.tokens[item.tokenIndex];
-                      return item.fullToken ? (
-                        <RenderedToken
-                          key={`${token.id}-${itemIndex}`}
-                          token={token}
-                          active={readingPopover?.tokenId === token.id}
-                          onOpen={openReadingPopover}
-                        />
-                      ) : <Fragment key={`${token.id}-${columnIndex}-${itemIndex}`}>{item.surface}</Fragment>;
-                    })}
-                  </span>
-                )) : content.tokens.map(token => (
+                )) : verticalCopyPlan ? verticalCopyPlan.columns.map((column, columnIndex) => {
+                  const hasRuby = column.some(item =>
+                    item.fullToken && Boolean(content.tokens[item.tokenIndex]?.reading)
+                  );
+                  return (
+                    <span className={`copy-column${hasRuby ? ' has-ruby' : ''}`} key={`column-${columnIndex}`}>
+                      {column.map((item, itemIndex) => {
+                        const token = content.tokens[item.tokenIndex];
+                        return item.fullToken ? (
+                          <RenderedToken
+                            key={`${token.id}-${itemIndex}`}
+                            token={token}
+                            active={readingPopover?.tokenId === token.id}
+                            onOpen={openReadingPopover}
+                          />
+                        ) : <Fragment key={`${token.id}-${columnIndex}-${itemIndex}`}>{item.surface}</Fragment>;
+                      })}
+                    </span>
+                  );
+                }) : content.tokens.map(token => (
                   <RenderedToken
                     key={token.id}
                     token={token}

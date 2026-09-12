@@ -3,10 +3,10 @@
   "short_name": "葉遊",
   "description": "将日文与中文句子制作为可分享的文学文字卡片。",
   "lang": "zh-CN",
-  "start_url": "/",
-  "scope": "/",
+  "start_url": ".",
+  "scope": ".",
   "display": "standalone",
   "background_color": "#dedbd3",
   "theme_color": "#a54432",
-  "icons": [{ "src": "/app-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+  "icons": [{ "src": "app-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
 }

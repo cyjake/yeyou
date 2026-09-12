@@ -799,11 +799,24 @@ fieldset legend {
 
 .balanced-columns .copy-column {
   display: block;
+  width: 1em;
+  flex: 0 0 1em;
   writing-mode: vertical-rl;
   text-orientation: upright;
   line-height: 1;
   letter-spacing: var(--copy-letter-spacing, 0.08em);
   white-space: nowrap;
+}
+
+.template-notebook.vertical .balanced-columns .copy-column {
+  /* Treat each rule as the left boundary of a full writing lane. */
+  transform: translateX(calc(var(--copy-column-gap, 1.25em) / 2));
+}
+
+.template-notebook.vertical .balanced-columns .copy-column.has-ruby {
+  /* Native vertical ruby widens its line box toward the annotation side.
+     Keep the base glyph on the same one-character lane as plain kana. */
+  transform: translateX(calc(var(--copy-column-gap, 1.25em) / 2 + 0.4em));
 }
 
 .literary-copy.metrical-verse {
@@ -817,9 +830,8 @@ fieldset legend {
 .template-notebook.vertical .literary-copy.balanced-columns {
   background-image: repeating-linear-gradient(
     90deg,
-    transparent 0 calc(1.625em - 1px),
-    var(--notebook-rule) calc(1.625em - 1px) 1.625em,
-    transparent 1.625em 2.25em
+    var(--notebook-rule) 0 1px,
+    transparent 1px 2.25em
   );
 }
 

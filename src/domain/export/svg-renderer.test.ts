@@ -44,7 +44,8 @@ describe('SVG export renderer', () => {
     project.content.tokens = [{ id: 'short', start: 0, end: 2, surface: '日本', candidates: [], locked: false }];
 
     const vertical = renderProjectSvg(project).svg;
-    expect(vertical).toMatch(/<path d="M[^\"]+ 80V720M[^\"]+ 80V720" stroke="#4a708b"/);
+    expect(vertical).toMatch(/<path d="M[^\"]+ 80V720" stroke="#4a708b"/);
+    expect(vertical).not.toMatch(/80V720M/);
     expect(vertical).not.toContain('stroke="#b75b53"');
 
     project.layout.direction = 'horizontal';

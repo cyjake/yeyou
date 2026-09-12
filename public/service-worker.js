@@ -1,7 +1,10 @@
-const VERSION = 'yeyou-v2';
+const VERSION = 'yeyou-v3';
 const SHELL = `${VERSION}-shell`;
 const RUNTIME = `${VERSION}-runtime`;
-const CORE = ['/', '/manifest.webmanifest', '/app-icon.svg'];
+const BASE_URL = new URL('./', self.location.href);
+const BASE_PATH = BASE_URL.pathname;
+const atBase = path => new URL(path, BASE_URL).pathname;
+const CORE = [BASE_PATH, atBase('manifest.webmanifest'), atBase('app-icon.svg')];
 
 self.addEventListener('install', event => event.waitUntil(caches.open(SHELL).then(cache => cache.addAll(CORE))));
 self.addEventListener('activate', event => event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => !key.startsWith(VERSION)).map(key => caches.delete(key)))).then(() => self.clients.claim())));
@@ -12,10 +15,10 @@ self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
   if (event.request.mode === 'navigate') {
-    event.respondWith(fetch(event.request).catch(() => caches.match('/')));
+    event.respondWith(fetch(event.request).catch(() => caches.match(BASE_PATH)));
     return;
   }
-  const cacheFirst = url.pathname.startsWith('/kuromoji/') || url.pathname.endsWith('kanji_to_hiragana.json');
+  const cacheFirst = url.pathname.startsWith(atBase('kuromoji/')) || url.pathname === atBase('kanji_to_hiragana.json');
   event.respondWith(cacheFirst ? cachedThenNetwork(event.request) : networkThenCached(event.request));
 });
 

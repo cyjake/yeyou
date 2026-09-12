@@ -5,7 +5,7 @@ export function registerPwa(onStatus: (status: PwaStatus, registration?: Service
   const notifyConnectivity = () => onStatus(navigator.onLine ? 'ready' : 'offline');
   window.addEventListener('online', notifyConnectivity);
   window.addEventListener('offline', notifyConnectivity);
-  void navigator.serviceWorker.register('/service-worker.js').then(registration => {
+  void navigator.serviceWorker.register(`${import.meta.env.BASE_URL}service-worker.js`).then(registration => {
     if (registration.waiting) onStatus('update-available', registration);
     else notifyConnectivity();
     registration.addEventListener('updatefound', () => {

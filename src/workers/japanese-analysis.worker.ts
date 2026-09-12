@@ -26,7 +26,8 @@ self.addEventListener('message', async (event: MessageEvent<AnalysisRequest>) =>
 
 function loadResources() {
   if (!resourcesPromise) {
-    const dictionaryPromise = fetch('/kanji_to_hiragana.json')
+    const baseUrl = import.meta.env.BASE_URL;
+    const dictionaryPromise = fetch(`${baseUrl}kanji_to_hiragana.json`)
       .then(response => {
         if (!response.ok) {
           throw new Error(`Japanese dictionary failed to load (${response.status}).`);
@@ -36,7 +37,7 @@ function loadResources() {
       .then(entries => entries);
 
     const tokenizerPromise = new Promise<Tokenizer>((resolve, reject) => {
-      kuromoji.builder({ dicPath: '/kuromoji' }).build((error, tokenizer) => {
+      kuromoji.builder({ dicPath: `${baseUrl}kuromoji` }).build((error, tokenizer) => {
         if (error) reject(error);
         else resolve(tokenizer);
       });

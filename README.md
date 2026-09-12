@@ -46,6 +46,12 @@ Open `/` for Studio. The original vanilla prototype and its archived assets rema
 
 The upgrade implementation is complete through the private-beta readiness gate. See [the beta test kit](docs/beta-test-kit.md), [content policy](docs/content-sources.md), [AI boundary](docs/ai-assistance-contract.md), and [full upgrade plan](docs/upgrade-plan.md).
 
+## GitHub Pages
+
+Pushes to `main` run the Pages workflow, build the app with the repository's Pages base path, upload `dist/`, and deploy that artifact. In the repository's **Settings → Pages**, select **GitHub Actions** as the publishing source.
+
+The build remains root-safe for local development and custom domains; the configured Pages base path is applied only in CI.
+
 ## Quality Checks
 
 The current renderer has a dependency-free Node test suite and a permanent Japanese reading benchmark:
