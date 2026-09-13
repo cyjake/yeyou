@@ -1,10 +1,19 @@
-const VERSION = 'yeyou-v3';
+const VERSION = 'yeyou-v4';
 const SHELL = `${VERSION}-shell`;
 const RUNTIME = `${VERSION}-runtime`;
 const BASE_URL = new URL('./', self.location.href);
 const BASE_PATH = BASE_URL.pathname;
 const atBase = path => new URL(path, BASE_URL).pathname;
-const CORE = [BASE_PATH, atBase('manifest.webmanifest'), atBase('app-icon.svg')];
+const CORE = [
+  BASE_PATH,
+  atBase('manifest.webmanifest'),
+  atBase('app-icon.svg'),
+  atBase('app-icon-192.png'),
+  atBase('app-icon-512.png'),
+  atBase('app-icon-maskable-512.png'),
+  atBase('apple-touch-icon.png'),
+  atBase('favicon-32.png')
+];
 
 self.addEventListener('install', event => event.waitUntil(caches.open(SHELL).then(cache => cache.addAll(CORE))));
 self.addEventListener('activate', event => event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => !key.startsWith(VERSION)).map(key => caches.delete(key)))).then(() => self.clients.claim())));
