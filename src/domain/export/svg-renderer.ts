@@ -185,9 +185,11 @@ function renderVerticalText(
   const output: string[] = [];
 
   if (template === 'notebook') {
+    const guideTop = startY - fontSize / 2;
+    const guideBottom = guideTop + blockHeight;
     const guides = Array.from({ length: plan.columns.length }, (_, index) => {
       const x = rightmostX - index * columnGap - columnGap / 2;
-      return `M${round(x)} ${round(top)}V${round(height - bottom)}`;
+      return `M${round(x)} ${round(guideTop)}V${round(guideBottom)}`;
     }).join('');
     output.push(`<path d="${guides}" stroke="#4a708b" stroke-opacity=".16" stroke-width="1"/>`);
   }

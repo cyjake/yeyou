@@ -37,15 +37,15 @@ describe('SVG export renderer', () => {
     expect(artifact.fileName).not.toContain('/');
   });
 
-  it('places notebook rules around writing lanes instead of through the characters', () => {
+  it('places notebook rules around writing lanes and limits them to the copy block', () => {
     const project = createInitialProject();
     project.layout.template = 'notebook';
     project.content.sourceText = '日本';
     project.content.tokens = [{ id: 'short', start: 0, end: 2, surface: '日本', candidates: [], locked: false }];
 
     const vertical = renderProjectSvg(project).svg;
-    expect(vertical).toMatch(/<path d="M[^\"]+ 80V720" stroke="#4a708b"/);
-    expect(vertical).not.toMatch(/80V720M/);
+    expect(vertical).toContain('<path d="M231.2 335.8V464.3" stroke="#4a708b"');
+    expect(vertical).not.toContain('80V720');
     expect(vertical).not.toContain('stroke="#b75b53"');
 
     project.layout.direction = 'horizontal';
