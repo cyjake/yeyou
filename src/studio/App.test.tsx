@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { isKatakanaLookupToken, RenderedToken } from './App';
+import { getStageNote, isKatakanaLookupToken, RenderedToken } from './App';
 
 describe('studio foundation', () => {
   it('keeps the exact showcase quotation', () => {
@@ -93,5 +93,17 @@ describe('studio foundation', () => {
     expect(isKatakanaLookupToken('トンネルを')).toBe(false);
     expect(html).toContain('class="ruby-trigger dictionary-trigger');
     expect(html).toContain('トンネル，点击查词');
+  });
+
+  it('uses the interpretation as the useful note below a selected passage', () => {
+    expect(getStageNote('ja-JP', '穿过长长的隧道，便是雪国。', 'ready'))
+      .toBe('译意｜穿过长长的隧道，便是雪国。');
+    expect(getStageNote('zh-Hant-TW', '春雨无声地滋润万物。', 'ready'))
+      .toBe('释意｜春雨无声地滋润万物。');
+  });
+
+  it('keeps a helpful status or prompt when no interpretation is available', () => {
+    expect(getStageNote('ja-JP', ' ', 'loading')).toBe('正在核对读音…');
+    expect(getStageNote('ja-JP', '', 'ready')).toBe('可在左侧补上一句译意。');
   });
 });

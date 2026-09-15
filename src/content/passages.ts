@@ -74,6 +74,19 @@ const chinesePassages: CuratedPassage[] = [
 
 export const curatedPassages: CuratedPassage[] = [...japanesePassages, ...chinesePassages];
 
+export function pickRandomPassage(
+  passages: CuratedPassage[],
+  language: CuratedPassage['language'],
+  currentSourceText: string,
+  random: () => number = Math.random
+): CuratedPassage | undefined {
+  const matchingLanguage = passages.filter(item => item.language === language);
+  const alternatives = matchingLanguage.filter(item => item.sourceText !== currentSourceText);
+  const candidates = alternatives.length ? alternatives : matchingLanguage;
+  if (!candidates.length) return undefined;
+  return candidates[Math.min(candidates.length - 1, Math.floor(Math.max(0, random()) * candidates.length))];
+}
+
 function literary(
   id: string,
   mood: CuratedPassage['mood'],

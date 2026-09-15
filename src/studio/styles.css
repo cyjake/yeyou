@@ -236,7 +236,7 @@ button:disabled {
   margin-top: auto;
   padding-top: 20px;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
 }
 
@@ -1114,8 +1114,11 @@ fieldset legend {
 
 .stage-note {
   margin: 14px 0 0;
+  max-width: min(620px, 92%);
   color: rgba(39, 37, 31, 0.46);
   font-size: 11px;
+  line-height: 1.65;
+  text-align: center;
 }
 
 fieldset {

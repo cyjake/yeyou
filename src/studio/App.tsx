@@ -3,9 +3,9 @@ import { PROJECT_STORAGE_KEY, useProjectStore } from '../domain/document/store';
 import type { ProjectDocument, TextToken } from '../domain/document/schema';
 import { analyzeJapaneseInWorker } from '../domain/japanese/analysis-client';
 import { createProjectPng, downloadProjectPdf, downloadProjectPng, type ProjectPng } from '../domain/export/download';
-import { canCopyPng, canSharePng, copyPngToClipboard, sharePng } from '../domain/export/share';
+import { canCopyPng, canSharePng, copyPngToClipboard, prefersNativePngShare, sharePng } from '../domain/export/share';
 import { collectExportWarnings } from '../domain/export/svg-renderer';
-import { curatedPassages, type CuratedPassage } from '../content/passages';
+import { curatedPassages, pickRandomPassage, type CuratedPassage } from '../content/passages';
 import { loadPersonalPassages, parsePersonalPassages, passageFromProject, persistPersonalPassages, upsertPersonalPassage } from '../content/personal-library';
 import { trackLocalEvent } from '../domain/analytics/local-analytics';
 import { activatePwaUpdate, type PwaStatus } from '../domain/pwa/registration';
@@ -41,6 +41,7 @@ export function App() {
   const [exportError, setExportError] = useState<string>();
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const [pendingExportFormat, setPendingExportFormat] = useState<'png' | 'pdf'>();
+  const [pendingExportAction, setPendingExportAction] = useState<'download' | 'share'>('download');
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryShelf, setGalleryShelf] = useState<'curated' | 'mine'>('curated');
   const [galleryMood, setGalleryMood] = useState<'全部' | CuratedPassage['mood']>('全部');
@@ -54,6 +55,7 @@ export function App() {
   const personalImportRef = useRef<HTMLInputElement>(null);
 
   const { content, layout } = project;
+  const mobileSharePreferred = useMemo(prefersNativePngShare, []);
   const copyDensity = getCopyDensity(content.sourceText);
   const classicalVerseLines = useMemo(
     () => project.locale.startsWith('zh') ? detectClassicalVerseLines(content.sourceText) : null,
@@ -207,6 +209,13 @@ export function App() {
     setGalleryMood('全部');
   };
 
+  const surpriseWithPassage = () => {
+    const passage = pickRandomPassage(curatedPassages, galleryLanguage, content.sourceText);
+    if (!passage) return;
+    loadPassage(passage);
+    trackLocalEvent('example_used');
+  };
+
   const dismissMobilePanel = (event: ReactMouseEvent<HTMLElement>) => {
     if (!mobilePanel || !window.matchMedia('(max-width: 860px)').matches) return;
     event.stopPropagation();
@@ -216,6 +225,7 @@ export function App() {
   const requestExport = (format: 'png' | 'pdf') => {
     setExportFormat(format);
     setPendingExportFormat(format);
+    setPendingExportAction('download');
     setExportMenuOpen(false);
     const warnings = collectExportWarnings(project);
     if (warnings.length) {
@@ -223,6 +233,18 @@ export function App() {
       return;
     }
     void performExport(format);
+  };
+
+  const requestShare = () => {
+    if (!preparedPng || !canSharePng(preparedPng)) return;
+    setPendingExportAction('share');
+    setExportMenuOpen(false);
+    const warnings = collectExportWarnings(project);
+    if (warnings.length) {
+      setExportWarnings(warnings);
+      return;
+    }
+    void shareImage();
   };
 
   const showShareNotice = (kind: 'success' | 'error', message: string) => {
@@ -403,8 +425,11 @@ export function App() {
             >
               <span><GlobeIcon />{galleryLanguage === 'ja' ? '日文' : '中文'}</span>
             </button>
-            <button type="button" onClick={() => { setGalleryOpen(true); trackLocalEvent('gallery_opened'); }}>
-              <span>浏览例句</span>
+            <button type="button" onClick={surpriseWithPassage} aria-label="随机选择一句例句" title="随机选择一句">
+              <span>偶遇一句</span>
+            </button>
+            <button type="button" onClick={() => { setGalleryOpen(true); trackLocalEvent('gallery_opened'); }} aria-label="浏览例句库" title="浏览例句库">
+              <span>句集</span>
             </button>
           </div>
 
@@ -463,7 +488,7 @@ export function App() {
           </article>
 
           <p className="stage-note">
-            {analysisStatus === 'loading' ? '正在核对读音…' : '文字、读音与出处现在来自同一份结构化文档。'}
+            {getStageNote(project.locale, content.translationZh, analysisStatus)}
           </p>
 
           <div className="export-dock">
@@ -476,10 +501,14 @@ export function App() {
                 <button
                   className="primary-button export-main"
                   type="button"
-                  onClick={() => requestExport(project.export.format)}
-                  disabled={exportStatus === 'exporting'}
+                  onClick={() => mobileSharePreferred ? requestShare() : requestExport(project.export.format)}
+                  disabled={exportStatus === 'exporting' || (mobileSharePreferred && !preparedPng)}
                 >
-                  {exportStatus === 'exporting' ? '生成中…' : `导出 ${project.export.format.toUpperCase()}`}
+                  {exportStatus === 'exporting'
+                    ? '生成中…'
+                    : mobileSharePreferred
+                      ? preparedPng ? '分享图片' : '准备分享…'
+                      : `导出 ${project.export.format.toUpperCase()}`}
                 </button>
                 <button
                   className="primary-button export-menu-trigger"
@@ -501,7 +530,7 @@ export function App() {
                   <button type="button" role="menuitem" onClick={() => requestExport('png')}>
                     <span><strong>下载 PNG</strong><small>高清图片文件</small></span>
                   </button>
-                  <button type="button" role="menuitem" onClick={() => void shareImage()} disabled={!preparedPng || !canSharePng(preparedPng)}>
+                  <button type="button" role="menuitem" onClick={requestShare} disabled={!preparedPng || !canSharePng(preparedPng)}>
                     <span><strong>分享图片</strong><small>{canSharePng(preparedPng) ? '打开系统分享' : '当前浏览器不可用'}</small></span>
                   </button>
                   <button type="button" role="menuitem" onClick={() => void copyImage()} disabled={!preparedPng || !canCopyPng()}>
@@ -570,7 +599,9 @@ export function App() {
             <ul>{exportWarnings.map(warning => <li key={warning}>{warning}</li>)}</ul>
             <div className="dialog-actions">
               <button className="quiet-button" type="button" onClick={() => setExportWarnings(null)}>返回修改</button>
-              <button className="primary-button" type="button" onClick={() => void performExport()}>仍然导出</button>
+              <button className="primary-button" type="button" onClick={() => pendingExportAction === 'share' ? void shareImage() : void performExport()}>
+                {pendingExportAction === 'share' ? '仍然分享' : '仍然导出'}
+              </button>
             </div>
           </section>
         </div>
@@ -849,6 +880,17 @@ function getCopyDensity(value: string): 'short' | 'regular' | 'long' {
   if (length <= 18) return 'short';
   if (length >= 42) return 'long';
   return 'regular';
+}
+
+export function getStageNote(
+  locale: ProjectDocument['locale'],
+  translation: string,
+  analysisStatus: 'idle' | 'loading' | 'ready' | 'error'
+): string {
+  const text = translation.trim();
+  if (text) return `${locale === 'ja-JP' ? '译意' : '释意'}｜${text}`;
+  if (analysisStatus === 'loading') return '正在核对读音…';
+  return locale === 'ja-JP' ? '可在左侧补上一句译意。' : '可在左侧补上一句释意。';
 }
 
 function GlobeIcon() {

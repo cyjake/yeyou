@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { curatedPassages } from './passages';
+import { curatedPassages, pickRandomPassage } from './passages';
 
 describe('curated passage library', () => {
   it('ships varied, traceable examples with explicit rights labels', () => {
@@ -17,5 +17,18 @@ describe('curated passage library', () => {
     }
     expect(curatedPassages.find(item => item.id === 'studio-snow-country')?.rights).toBe('quotation');
     expect(new Set(curatedPassages.filter(item => item.language === 'ja').map(item => item.author)).size).toBeGreaterThanOrEqual(7);
+  });
+
+  it('picks a passage in the active language without immediately repeating the current line', () => {
+    const current = curatedPassages.find(item => item.language === 'ja')!;
+    const picked = pickRandomPassage(curatedPassages, 'ja', current.sourceText, () => 0);
+
+    expect(picked?.language).toBe('ja');
+    expect(picked?.sourceText).not.toBe(current.sourceText);
+  });
+
+  it('still returns the sole matching passage when there is no alternative', () => {
+    const only = curatedPassages.find(item => item.language === 'zh')!;
+    expect(pickRandomPassage([only], 'zh', only.sourceText, () => 0)).toBe(only);
   });
 });
