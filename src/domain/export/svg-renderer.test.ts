@@ -152,4 +152,21 @@ describe('SVG export renderer', () => {
     expect(horizontal).toContain('>床前明月光，</text>');
     expect(horizontal).toContain('>低头思故乡。</text>');
   });
+
+  it('keeps closing punctuation with the preceding text in vertical Chinese prose', () => {
+    const project = createInitialProject();
+    project.locale = 'zh-Hant-TW';
+    project.layout.template = 'calligraphy';
+    project.content.sourceText = '人生天地之間，若白駒之過隙，忽然而已。';
+    project.content.tokens = [{
+      id: 'prose', start: 0, end: project.content.sourceText.length,
+      surface: project.content.sourceText, candidates: [], locked: false
+    }];
+
+    const svg = renderProjectSvg(project).svg;
+    const punctuationPair = svg.match(/<text class="main" x="([^"]+)"[^>]*>間<\/text><text class="main" x="([^"]+)"[^>]*>，<\/text>/);
+
+    expect(punctuationPair).not.toBeNull();
+    expect(punctuationPair?.[2]).toBe(punctuationPair?.[1]);
+  });
 });

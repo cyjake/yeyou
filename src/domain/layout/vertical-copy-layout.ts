@@ -16,6 +16,13 @@ export type VerticalCopyPlan = {
 
 const ratioAspect = { '3:4': 3 / 4, '4:5': 4 / 5, '1:1': 1 } as const;
 
+// CJK line-breaking prohibition rules (禁则处理): closing punctuation stays
+// with the preceding text, while opening punctuation stays with what follows.
+const PROHIBITED_AT_COLUMN_START = new Set(Array.from('、。，．！？；：…‥）〕］｝〉》」』】〙〗〟’”»﹂﹄﹐﹑﹒﹔﹕﹖﹗'));
+const PROHIBITED_AT_COLUMN_END = new Set(Array.from('（〔［｛〈《「『【〘〖〝‘“«﹁﹃'));
+const PREFERRED_AT_COLUMN_END = new Set(Array.from('、。，．！？；：…‥）〕］｝〉》」』】〙〗〟’”»﹂﹄﹐﹑﹒﹔﹕﹖﹗'));
+const NON_PUNCTUATION_BREAK_TIEBREAKER = 0.01;
+
 export function planVerticalCopy(
   tokens: TextToken[],
   ratio: ProjectDocument['layout']['ratio'],
@@ -80,7 +87,11 @@ function layoutItems(tokens: TextToken[]): VerticalLayoutItem[] {
   return items;
 }
 
-function balancedPartitions(items: VerticalLayoutItem[], columnCount: number): VerticalLayoutItem[][] {
+function balancedPartitions(
+  items: VerticalLayoutItem[],
+  columnCount: number,
+  enforceCjkBreaks = true
+): VerticalLayoutItem[][] {
   if (columnCount <= 1) return [items];
   const count = items.length;
   const prefix = [0];
@@ -93,14 +104,26 @@ function balancedPartitions(items: VerticalLayoutItem[], columnCount: number): V
   for (let columns = 1; columns <= columnCount; columns++) {
     for (let end = columns; end <= count; end++) {
       for (let start = columns - 1; start < end; start++) {
+        if (enforceCjkBreaks && !isLegalColumn(items, start, end)) continue;
         const length = prefix[end] - prefix[start];
-        const cost = costs[columns - 1][start] + (length - target) ** 2;
+        // Balance remains the primary objective. This tiny secondary cost only
+        // resolves otherwise equivalent layouts in favor of a completed clause.
+        const breakPreferenceCost = enforceCjkBreaks && end < count && !endsWithPreferredPunctuation(items[end - 1].surface)
+          ? NON_PUNCTUATION_BREAK_TIEBREAKER
+          : 0;
+        const cost = costs[columns - 1][start] + (length - target) ** 2 + breakPreferenceCost;
         if (cost < costs[columns][end]) {
           costs[columns][end] = cost;
           breaks[columns][end] = start;
         }
       }
     }
+  }
+
+  // Malformed or punctuation-only copy can make a fully legal partition
+  // impossible. Preserve all source text with the old balanced fallback.
+  if (!Number.isFinite(costs[columnCount][count])) {
+    return balancedPartitions(items, columnCount, false);
   }
 
   const result: VerticalLayoutItem[][] = [];
@@ -111,6 +134,24 @@ function balancedPartitions(items: VerticalLayoutItem[], columnCount: number): V
     end = start;
   }
   return result;
+}
+
+function isLegalColumn(items: VerticalLayoutItem[], start: number, end: number): boolean {
+  if (start > 0 && PROHIBITED_AT_COLUMN_START.has(firstCharacter(items[start].surface))) return false;
+  if (end < items.length && PROHIBITED_AT_COLUMN_END.has(lastCharacter(items[end - 1].surface))) return false;
+  return true;
+}
+
+function firstCharacter(value: string): string {
+  return Array.from(value)[0] ?? '';
+}
+
+function lastCharacter(value: string): string {
+  return Array.from(value).at(-1) ?? '';
+}
+
+function endsWithPreferredPunctuation(value: string): boolean {
+  return PREFERRED_AT_COLUMN_END.has(lastCharacter(value));
 }
 
 function countCharacters(value: string): number {
