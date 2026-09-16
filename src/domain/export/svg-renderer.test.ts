@@ -169,4 +169,23 @@ describe('SVG export renderer', () => {
     expect(punctuationPair).not.toBeNull();
     expect(punctuationPair?.[2]).toBe(punctuationPair?.[1]);
   });
+
+  it('rotates curved quotation marks in vertical exports only', () => {
+    const project = createInitialProject();
+    project.locale = 'zh-Hant-TW';
+    project.content.sourceText = '“人生天地之間，忽然而已。”';
+    project.content.tokens = [{
+      id: 'quoted-prose', start: 0, end: project.content.sourceText.length,
+      surface: project.content.sourceText, candidates: [], locked: false
+    }];
+
+    const vertical = renderProjectSvg(project).svg;
+    expect(vertical).toMatch(/class="main vertical-quotation"[^>]*transform="rotate\(90 [^)]+\)"[^>]*>“<\/text>/);
+    expect(vertical).toMatch(/class="main vertical-quotation"[^>]*transform="rotate\(90 [^)]+\)"[^>]*>”<\/text>/);
+
+    project.layout.direction = 'horizontal';
+    const horizontal = renderProjectSvg(project).svg;
+    expect(horizontal).not.toContain('vertical-quotation');
+    expect(horizontal).not.toContain('transform="rotate(90');
+  });
 });

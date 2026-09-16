@@ -12,6 +12,10 @@ const baseSizes = {
   '1:1': [600, 600]
 } as const;
 
+// CSS vertical writing rotates curved quotation marks automatically. SVG text
+// laid out glyph-by-glyph does not, so export must apply the same transform.
+const ROTATED_VERTICAL_QUOTATION_MARKS = new Set(['“', '”', '‘', '’']);
+
 export function renderProjectSvg(project: ProjectDocument): ExportArtifact {
   const [viewWidth, viewHeight] = baseSizes[project.layout.ratio];
   const width = viewWidth * project.export.scale;
@@ -149,7 +153,7 @@ function renderVerticalVerse(lines: string[], width: number, height: number, met
   const rightmostX = width / 2 + (lines.length - 1) * columnGap / 2;
 
   return lines.map((line, column) => Array.from(line).map((character, row) =>
-    `<text class="main" x="${round(rightmostX - column * columnGap)}" y="${round(startY + row * advance)}" font-size="${fontSize}" text-anchor="middle" dominant-baseline="middle">${escapeXml(character)}</text>`
+    renderVerticalMainGlyph(character, rightmostX - column * columnGap, startY + row * advance, fontSize)
   ).join('')).join('');
 }
 
@@ -202,7 +206,7 @@ function renderVerticalText(
       const tokenStartRow = row;
       for (const character of Array.from(item.surface)) {
         const y = startY + row * advance;
-        output.push(`<text class="main" x="${round(tokenX)}" y="${round(y)}" font-size="${fontSize}" text-anchor="middle" dominant-baseline="middle">${escapeXml(character)}</text>`);
+        output.push(renderVerticalMainGlyph(character, tokenX, y, fontSize));
         row++;
       }
 
@@ -223,6 +227,13 @@ function renderVerticalText(
     }
   });
   return output.join('');
+}
+
+function renderVerticalMainGlyph(character: string, x: number, y: number, fontSize: number): string {
+  const roundedX = round(x);
+  const roundedY = round(y);
+  const rotated = ROTATED_VERTICAL_QUOTATION_MARKS.has(character);
+  return `<text class="main${rotated ? ' vertical-quotation' : ''}" x="${roundedX}" y="${roundedY}" font-size="${fontSize}"${rotated ? ` transform="rotate(90 ${roundedX} ${roundedY})"` : ''} text-anchor="middle" dominant-baseline="middle">${escapeXml(character)}</text>`;
 }
 
 function renderHorizontalText(tokens: TextToken[], width: number, height: number, template: ProjectDocument['layout']['template'], metrics: TextMetrics): string {
